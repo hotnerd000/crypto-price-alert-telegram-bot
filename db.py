@@ -16,7 +16,8 @@ async def init_db():
             sl REAL,
             interval INTEGER,
             last_checked INTEGER,
-            triggered INTEGER DEFAULT 0
+            triggered INTEGER DEFAULT 0,
+            UNIQUE(user_id, coin_id)
         )
         """)
 
@@ -30,11 +31,18 @@ async def init_db():
 
         await db.commit()
 
-async def add_alert(user_id, symbol, coin_id, tp, sl, interval):
+async def upsert_alert(user_id, symbol, coin_id, tp, sl, interval):
     async with aiosqlite.connect(DB_NAME) as db:
         await db.execute("""
-        INSERT INTO alerts (user_id, symbol, coin_id, tp, sl, interval, last_checked)
-        VALUES (?, ?, ?, ?, ?, ?, 0)
+        INSERT INTO alerts (user_id, symbol, coin_id, tp, sl, interval, last_checked, triggered, cooldown_until)
+        VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0)
+        ON CONFLICT(user_id, coin_id)
+        DO UPDATE SET
+            tp=excluded.tp,
+            sl=excluded.sl,
+            interval=excluded.interval,
+            triggered=0,
+            cooldown_until=0
         """, (user_id, symbol, coin_id, tp, sl, interval))
         await db.commit()
 
@@ -91,3 +99,11 @@ async def set_cooldown(alert_id, ts):
             (ts, alert_id)
         )
         await db.commit()
+
+async def get_alert_by_user_coin(user_id, coin_id):
+    async with aiosqlite.connect(DB_NAME) as db:
+        cursor = await db.execute(
+            "SELECT * FROM alerts WHERE user_id=? AND coin_id=?",
+            (user_id, coin_id)
+        )
+        return await cursor.fetchone()

@@ -1,14 +1,15 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 from price_service import resolve_symbol, fetch_price_single
-from db import add_alert, get_user_alerts, delete_alert
+from db import upsert_alert, get_user_alerts, delete_alert, get_alert_by_user_coin
+from messages import HELP_ADD
 
 def recommend_levels(price):
     return round(price * 1.05, 2), round(price * 0.95, 2)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Welcome!\nUse /add BTC 70000 63000 60"
+        f"Welcome!\nUse {HELP_ADD}"
     )
 
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -32,7 +33,9 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
             return
         rec_tp, rec_sl = recommend_levels(price)
 
-        await add_alert(
+        existing = await get_alert_by_user_coin(update.effective_user.id, coin_id)        
+        print("Existing---", existing)
+        await upsert_alert(
             update.effective_user.id,
             symbol,
             coin_id,
@@ -41,17 +44,45 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
             interval
         )
 
-        await update.message.reply_text(
-            f"✅ Alert added\n"
-            f"Current: ${price}\n"
-            f"Your TP: {tp}, SL: {sl}\n"
-            f"Suggested TP: {rec_tp}, SL: {rec_sl}"
+        if existing:
+            old_tp = existing[4]
+            old_sl = existing[5]
+            old_interval = existing[6]
+
+            msg = (
+                f"🔄 Alert updated for {symbol.upper()}\n"
+                f"Old → TP:{old_tp}, SL:{old_sl}, Int:{old_interval}s\n"
+                f"New → TP:{tp}, SL:{sl}, Int:{interval}s"
+            )
+        else:
+            msg = "➕ New alert created"
+
+        await update.effective_message.reply_text(
+            f"{msg} for {symbol.upper()}\n"
+            f"TP: {tp}, SL: {sl}, Interval: {interval}s"
         )
 
     except:
         await update.message.reply_text(
-            "Usage:\n/add BTC 70000 63000 60"
+            f"Usage:\n{HELP_ADD}"
         )
+
+async def update_alert_cmd(update, context):
+    user_id = update.effective_user.id
+    symbol = context.args[0].lower()
+    tp = float(context.args[1])
+    sl = float(context.args[2])
+    interval = int(context.args[3])
+
+    coin_id = resolve_symbol(symbol)
+
+    if not coin_id:
+        await update.message.reply_text("❌ Invalid symbol.")
+        return
+
+    await upsert_alert(user_id, symbol, coin_id, tp, sl, interval)
+
+    await update.message.reply_text("🔄 Alert updated!")
 
 async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:

@@ -7,6 +7,8 @@ from alert_engine import AlertEngine
 import socket
 from telegram.request import HTTPXRequest
 from price_service import session
+from handlers import update_alert_cmd
+
 
 # Force IPv4
 def force_ipv4():
@@ -60,6 +62,7 @@ def main():
     app.add_handler(CommandHandler("price", price))
     app.add_handler(CommandHandler("list", list_alerts))
     app.add_handler(CommandHandler("remove", remove_alert))
+    app.add_handler(CommandHandler("update", update_alert_cmd))
 
     print("Bot running...")
     app.run_polling()  # <-- NO await, NO asyncio.run()
