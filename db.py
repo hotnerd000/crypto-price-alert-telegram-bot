@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS alerts (
     last_checked INTEGER,
     triggered INTEGER DEFAULT 0
 );
+
+ALTER TABLE alerts ADD COLUMN cooldown_until INTEGER DEFAULT 0;
 """
 
 async def init_db():
@@ -64,5 +66,21 @@ async def delete_alert(alert_id, user_id):
         await db.execute(
             "DELETE FROM alerts WHERE id=? AND user_id=?",
             (alert_id, user_id)
+        )
+        await db.commit()
+
+async def reset_trigger(alert_id):
+    async with aiosqlite.connect(DB_NAME) as db:
+        await db.execute(
+            "UPDATE alerts SET triggered=0 WHERE id=?",
+            (alert_id,)
+        )
+        await db.commit()
+
+async def set_cooldown(alert_id, ts):
+    async with aiosqlite.connect(DB_NAME) as db:
+        await db.execute(
+            "UPDATE alerts SET cooldown_until=? WHERE id=?",
+            (ts, alert_id)
         )
         await db.commit()
