@@ -1,280 +1,167 @@
 # 🚀 Crypto Price Alert Telegram Bot
 
-A production-ready Telegram bot that monitors cryptocurrency prices and sends real-time alerts when price thresholds are hit.
+A production-ready Telegram bot that tracks cryptocurrency prices, sends alerts, and estimates swap costs across multiple networks.
 
 ---
 
-## 📌 Features
+## ✨ Features
 
-* ✅ Add price alerts (Take-Profit / Stop-Loss)
-* ✅ Real-time price monitoring
-* ✅ Smart alert system (no spam, cooldown enabled)
-* ✅ Batch API calls (efficient & scalable)
-* ✅ In-memory caching (reduces API usage)
-* ✅ SQLite database (persistent alerts)
-* ✅ Manual price check command
-* ✅ Symbol validation & mapping
+### 📊 Price Tracking
+- Get real-time crypto prices in USD
+- Supports major coins (BTC, ETH, BNB, TON, etc.)
 
----
+### 🔔 Smart Alerts
+- Set price alerts with:
+  - Take-Profit (TP)
+  - Stop-Loss (SL)
+- Configurable check intervals
+- One active alert per coin per user
 
-## 🧠 How It Works
+### 💸 Swap Cost Estimation
+- Estimate trading cost before executing a swap
+- Includes:
+  - Network fee (ETH / BSC / TON)
+  - Slippage (based on trade size)
+  - Total cost
+  - Estimated received amount
 
-1. User adds an alert via Telegram
-2. Bot stores alert in database
-3. Background engine:
-
-   * Fetches prices (batched)
-   * Applies caching (TTL)
-   * Checks TP/SL conditions
-4. Sends alert when condition is met
-
----
-
-## ⚙️ Tech Stack
-
-* Python 3.10+
-* python-telegram-bot (async)
-* aiohttp (HTTP client)
-* aiosqlite (async DB)
-* CoinGecko API (price data)
+### ⚡ Efficient Architecture
+- Async (non-blocking)
+- Batched API calls
+- SQLite database
+- Config-driven design
 
 ---
 
-## 📂 Project Structure
+## 🧠 Commands
 
-```
-crypto-price-alert-bot/
-│
-├── main.py              # Entry point
-├── handlers.py          # Telegram commands
-├── alert_engine.py      # Background alert logic
-├── price_service.py     # API + caching + batching
-├── db.py                # Database logic
-├── config.py            # Config variables
-└── requirements.txt
-```
+### 📊 Get Price
+
+/price <symbol> [amount]
+
+Examples:
+/price BTC
+/price ETH 1000
 
 ---
 
-## 🔧 Installation
+### 🔔 Add Alert
 
-### 1. Clone repo
-
-```bash
-git clone git@github.com:hotnerd000/crypto-price-alert-telegram-bot.git
-cd crypto-price-alert-bot
-```
-
-### 2. Create virtual environment
-
-```bash
-python -m venv venv
-venv\Scripts\activate   # Windows
-```
-
-### 3. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
----
-
-## 🔑 Configuration
-
-Create a `config.py` file:
-
-```python
-BOT_TOKEN = "your_telegram_bot_token"
-CHECK_INTERVAL = 5  # seconds
-CACHE_TTL = 10      # seconds
-```
-
----
-
-## ▶️ Run the Bot
-
-```bash
-python main.py
-```
-
----
-
-## 📱 Telegram Commands
-
-### ➕ Add Alert
-
-```
-/add <symbol> <tp> <sl> <interval>
-```
+/add <symbol> <tp> <sl> <interval_seconds>
 
 Example:
-
-```
-/add BTC 70000 65000 10
-```
-
----
-
-### 📊 Check Price
-
-```
-/price <symbol>
-```
-
-Example:
-
-```
-/price ETH
-```
+/add BTC 70000 63000 60
 
 ---
 
 ### 📋 List Alerts
 
-```
 /list
-```
 
 ---
 
 ### ❌ Remove Alert
 
-```
-/remove <alert_id>
-```
+/remove <symbol>
 
 ---
 
-## 🔄 Smart Alert Logic
+### 🔄 Update Alert
 
-* Cooldown prevents repeated alerts
-* Trigger resets when price returns to range
-* Buffer (0.5%) avoids false breakouts
+/update <symbol> <tp> <sl> <interval>
 
 ---
 
-## ⚡ Performance Optimizations
+## 📈 Swap Estimation Model
 
-### 1. API Batching
+Total Cost ≈ Network Fee + Slippage
 
-Fetch multiple coin prices in a single request.
+### Network Fees (Estimated)
 
-### 2. Caching Layer
+- ETH: $3 – $8
+- BSC: $0.1 – $0.3
+- TON: $0.005 – $0.02
 
-* TTL-based caching
-* Reduces API calls drastically
+### Slippage Model
 
-### 3. Shared HTTP Session
-
-* Connection reuse
-* Lower latency
-
----
-
-## ⚠️ Rate Limit Handling
-
-CoinGecko has rate limits.
-
-Mitigations:
-
-* Caching (10–15 sec)
-* Batch requests
-* Avoid unnecessary calls
+- < $100 → 0.2%
+- < $1,000 → 0.5%
+- < $10,000 → 1.0%
+- > $10,000 → 2.0%
 
 ---
 
-## 🚀 Future Improvements
+## 🗂️ Project Structure
 
-* 🔌 Binance WebSocket (real-time streaming)
-* 📈 Chart visualization
-* 📊 Portfolio tracking
-* 🔔 Custom alert conditions (RSI, MACD)
-* ☁️ Deploy to cloud (AWS / VPS)
-* 👥 Multi-user scaling
-
----
-
-## 🧪 Debugging
-
-Enable debug logs in `price_service.py`:
-
-```python
-print("[DEBUG] URL:", url)
-print("[DEBUG] Response:", data)
-```
+project/
+├── main.py
+├── handlers.py
+├── price_service.py
+├── db.py
+├── config.py
+└── requirements.txt
 
 ---
 
-## 🛠 Common Issues
+## ⚙️ Configuration
 
-### ❌ "Failed to fetch price"
+Example config.py:
 
-* Check symbol mapping
-* Verify API response
-* Enable debug logs
-
-### ❌ Rate limit exceeded
-
-* Increase `CACHE_TTL`
-* Reduce `CHECK_INTERVAL`
-
-### ❌ Invalid symbol
-
-* Ensure mapping exists in `COIN_CONFIG `
-
----
-
-## 🧠 Supported Coins
-
-Uses CoinGecko IDs:
-
-Example:
-
-```python
-COIN_CONFIG  = {
-    "btc": {
-        "id": "bitcoin",
-        "chain": "ETH"   # BTC wrapped trading assumption
-    },
-    "eth": {
-        "id": "ethereum",
-        "chain": "ETH"
-    },
-    "bnb": {
-        "id": "binancecoin",
-        "chain": "BSC"
-    },
-    "ton": {
-        "id": "the-open-network",
-        "chain": "TON"
-    }
+symbol_map = {
+    "btc": {"id": "bitcoin", "chain": "ETH"},
+    "eth": {"id": "ethereum", "chain": "ETH"},
+    "bnb": {"id": "binancecoin", "chain": "BSC"},
+    "ton": {"id": "the-open-network", "chain": "TON"}
 }
-```
+
+NETWORK_FEES = {
+    "ETH": (3, 8),
+    "BSC": (0.1, 0.3),
+    "TON": (0.005, 0.02)
+}
 
 ---
 
-## 📜 License
+## 🛠️ Installation
 
-MIT License
+1. Clone repo:
+git clone <your-repo>
+cd <your-repo>
 
----
+2. Install dependencies:
+pip install -r requirements.txt
 
-## 🙌 Credits
+3. Set Telegram Bot Token:
+BOT_TOKEN=your_telegram_bot_token
 
-* CoinGecko API
-* python-telegram-bot
-
----
-
-## 💡 Final Note
-
-This project is designed to be:
-
-* Beginner-friendly
-* Production-ready
-* Easily extendable
+4. Run bot:
+python main.py
 
 ---
 
-🔥 Build, experiment, and upgrade it into a full trading assistant!
+## 📦 requirements.txt
+
+python-telegram-bot==21.0
+aiohttp
+aiosqlite
+python-dotenv
+
+---
+
+## ⚠️ Disclaimer
+
+- This bot provides estimates only
+- Not financial advice
+- Always verify before trading
+
+---
+
+## 🧑‍💻 Author
+
+Built as part of an AI Crypto Developer project
+
+---
+
+## ⭐ If you like this project
+
+Give it a star and keep building 🚀

@@ -153,13 +153,13 @@ async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
         swap = estimate_swap_cost_universal(symbol, amount)
 
         if swap:
-            msg += (
+             msg += (
                 f"\n\n💸 Swap Estimate"
+                f"\nAmount: ${amount}"
                 f"\nNetwork: {swap['chain']}"
-                f"\nAmount: ${swap['amount']}"
                 f"\nSlippage: ~{swap['slippage_pct']}%"
                 f"\nNetwork Fee: ~${swap['gas_fee']}"
-                f"\n\nTotal Cost: ~${swap['total_cost']}"
+                f"\nTotal Cost: ~${swap['total_cost']}"
                 f"\nYou Receive: ~${swap['receive']}"
             )
     
