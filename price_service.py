@@ -5,23 +5,33 @@ from config import SYMBOL_MAP
 CACHE = {}
 CACHE_TTL = 20  # seconds
 
-async def fetch_price(coin_id):
-    now = time.time()
+session = None
 
-    if coin_id in CACHE:
-        price, ts = CACHE[coin_id]
-        if now - ts < CACHE_TTL:
-            return price
+async def get_session():
+    global session
+    if session is None:
+        session = aiohttp.ClientSession()
+    return session
 
-    url = f"https://api.coingecko.com/api/v3/simple/price?ids={coin_id}&vs_currencies=usd"
+async def fetch_prices_batch(coin_ids):
+    """
+    Fetch multiple coin prices in ONE request
+    coin_ids = ["bitcoin", "ethereum", "solana"]
+    """
+    session = await get_session()
+    ids = ",".join(coin_ids)
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as res:
-            data = await res.json()
+    url = f"https://api.coingecko.com/api/v3/simple/price?ids={ids}&vs_currencies=usd"
 
-    price = data[coin_id]["usd"]
-    CACHE[coin_id] = (price, now)
-    return price
+    async with session.get(url) as res:
+        data = await res.json()
+
+    # Normalize output
+    prices = {}
+    for coin in coin_ids:
+        prices[coin] = data.get(coin, {}).get("usd")
+
+    return prices
 
 def resolve_symbol(symbol):
     symbol = symbol.lower()

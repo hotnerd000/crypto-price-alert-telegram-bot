@@ -6,6 +6,7 @@ from db import init_db
 from alert_engine import AlertEngine
 import socket
 from telegram.request import HTTPXRequest
+from price_service import session
 
 # Force IPv4
 def force_ipv4():
@@ -29,6 +30,10 @@ async def post_init(app):
     engine = AlertEngine(app.bot)
     asyncio.create_task(engine.run())
 
+async def post_shutdown(app):
+    if session:
+        await session.close()
+        print("HTTP session closed")
 
 def main():
     loop = asyncio.new_event_loop()
@@ -45,7 +50,8 @@ def main():
         ApplicationBuilder()
         .token(BOT_TOKEN)
         .request(request)
-        .post_init(post_init)  # <-- IMPORTANT
+        .post_init(post_init) 
+        .post_shutdown(post_shutdown)
         .build()
     )
 

@@ -1,7 +1,7 @@
 import asyncio
 import time
 from db import get_alerts, update_last_checked, mark_triggered
-from price_service import fetch_price
+from price_service import fetch_prices_batch
 from config import CHECK_INTERVAL
 from db import reset_trigger, set_cooldown
 
@@ -15,6 +15,14 @@ class AlertEngine:
         while True:
             alerts = await get_alerts()
             now = int(time.time())
+
+            unique_coins = list(set(alert[3] for alert in alerts))
+
+            try:
+                prices = await fetch_prices_batch(unique_coins)
+            except Exception as e:
+                print("Batch fetch error:", e)
+                prices = {}
 
             for alert in alerts:
                 (
@@ -37,7 +45,10 @@ class AlertEngine:
                     continue
 
                 try:
-                    price = await fetch_price(coin_id)
+                    price = prices.get(coin_id)
+
+                    if price is None:
+                        continue
 
                     tp_buffer = tp * (1 + BUFFER)
                     sl_buffer = sl * (1 - BUFFER)
