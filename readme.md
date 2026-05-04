@@ -92,7 +92,7 @@ Total Cost ≈ Network Fee + Slippage
 ---
 
 ## 🗂️ Project Structure
-
+```
 project/
 ├── main.py
 ├── handlers.py
@@ -100,7 +100,7 @@ project/
 ├── db.py
 ├── config.py
 └── requirements.txt
-
+```
 ---
 
 ## ⚙️ Configuration
