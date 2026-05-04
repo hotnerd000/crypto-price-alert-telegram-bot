@@ -92,7 +92,7 @@ Total Cost ≈ Network Fee + Slippage
 ---
 
 ## 🗂️ Project Structure
-```
+
 project/
 ├── main.py
 ├── handlers.py
@@ -100,13 +100,15 @@ project/
 ├── db.py
 ├── config.py
 └── requirements.txt
-```
+
 ---
+
+
 
 ## ⚙️ Configuration
 
 Example config.py:
-
+```
 symbol_map = {
     "btc": {"id": "bitcoin", "chain": "ETH"},
     "eth": {"id": "ethereum", "chain": "ETH"},
@@ -119,7 +121,7 @@ NETWORK_FEES = {
     "BSC": (0.1, 0.3),
     "TON": (0.005, 0.02)
 }
-
+```
 ---
 
 ## 🛠️ Installation
