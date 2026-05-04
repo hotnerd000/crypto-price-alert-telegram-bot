@@ -61,7 +61,7 @@ crypto-price-alert-bot/
 ### 1. Clone repo
 
 ```bash
-git clone https://github.com/your-username/crypto-price-alert-bot.git
+git clone git@github.com:hotnerd000/crypto-price-alert-telegram-bot.git
 cd crypto-price-alert-bot
 ```
 
