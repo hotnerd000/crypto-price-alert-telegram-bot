@@ -1,8 +1,10 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from price_service import resolve_symbol, fetch_price_single
+from price_service import resolve_symbol, fetch_price_single, generate_chart
 from db import upsert_alert, get_user_alerts, delete_alert, get_alert_by_user_coin
-from messages import HELP_ADD, CMD_UPDATE_EXAMPLE
+from messages import HELP_ADD, CMD_UPDATE_EXAMPLE, CMD_PRICE_EXAMPLE
+from price_service import generate_candlestick_chart
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 def recommend_levels(price):
     return round(price * 1.05, 2), round(price * 0.95, 2)
@@ -104,28 +106,59 @@ async def update_alert_cmd(update, context):
     await update.message.reply_text("🔄 Alert updated!")
 
 async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    try:
-        symbol = context.args[0]
-        coin_id = resolve_symbol(symbol)
+     
+    if len(context.args) < 1:
+        await update.effective_message.reply_text(
+            f"Usage:\n/{CMD_PRICE_EXAMPLE}"
+        )
+        return
+     
+    symbol = context.args[0]
+    coin_id = resolve_symbol(symbol)
 
-        if not coin_id:
-            await update.message.reply_text("❌ Invalid symbol")
-            return
+    if not coin_id:
+        await update.message.reply_text("❌ Invalid symbol")
+        return
 
-        price = await fetch_price_single(coin_id)
-        print(f"[DEBUG] coin_id={coin_id}, price={price}")
+    price = await fetch_price_single(coin_id)
+    
+    print(f"[DEBUG] coin_id={coin_id}, price={price}")
 
-        if price is None:
+    if price is None:
             await update.message.reply_text("❌ Failed to fetch price.")
             return
 
-        await update.message.reply_text(
-            f"{symbol.upper()} = ${price}"
+    alert = await get_alert_by_user_coin(update.effective_user.id, coin_id)
+
+    msg = f"📊 {symbol.upper()} Price: ${price}"
+
+    if alert:
+        msg += (
+            f"\n\n🔔 Your Alert:\n"
+            f"TP: {alert[4]}\n"
+            f"SL: {alert[5]}\n"
+            f"Interval: {alert[6]}s"
         )
 
-    except:
-        await update.message.reply_text("Usage: /price BTC")
+    # chart_image = await generate_chart(coin_id)
+    chart = await generate_candlestick_chart(coin_id)
 
+    # await update.effective_message.reply_photo(
+    #     photo=chart,
+    #     caption=msg
+    # )
+    chart_url = f"https://www.tradingview.com/symbols/BINANCE:{symbol.upper()}USDT/"
+
+    keyboard = [
+        [InlineKeyboardButton("📈 Chart", url=chart_url)],
+        [InlineKeyboardButton("🌐 Coin Info", url=f"https://www.coingecko.com/en/coins/{coin_id}")]
+    ]
+
+    await update.effective_message.reply_photo(
+        photo=chart,
+        caption=msg,
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
 async def list_alerts(update, context):
     user_id = update.effective_user.id
@@ -178,3 +211,4 @@ async def remove_alert(update, context):
         await update.message.reply_text(
             "Usage: /remove <alert_id>\nExample: /remove 1"
         )
+

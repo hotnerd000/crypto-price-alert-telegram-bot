@@ -1,6 +1,11 @@
+import matplotlib.pyplot as plt
 import aiohttp
 import time
 from config import SYMBOL_MAP
+import pandas as pd
+from io import BytesIO
+import mplfinance as mpf
+from ta.momentum import RSIIndicator
 
 CACHE = {}
 CACHE_TTL = 120  # seconds
@@ -54,6 +59,30 @@ async def fetch_prices_batch(coin_ids):
 
     return cached_prices
 
+async def generate_chart(symbol):
+    url = f"https://api.coingecko.com/api/v3/coins/{symbol}/market_chart?vs_currency=usd&days=1"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as res:
+            data = await res.json()
+
+    prices = data["prices"]
+
+    df = pd.DataFrame(prices, columns=["time", "price"])
+
+    plt.figure()
+    plt.plot(df["price"])
+    plt.title(f"{symbol.upper()} Price (24h)")
+    plt.xlabel("Time")
+    plt.ylabel("USD")
+
+    buf = BytesIO()
+    plt.savefig(buf, format="png")
+    plt.close()
+
+    buf.seek(0)
+    return buf
+
 async def fetch_price_single(coin_id):
     prices = await fetch_prices_batch([coin_id])
     return prices.get(coin_id)
@@ -61,3 +90,46 @@ async def fetch_price_single(coin_id):
 def resolve_symbol(symbol):
     symbol = symbol.lower()
     return SYMBOL_MAP.get(symbol)
+
+async def generate_candlestick_chart(coin_id):
+    url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/ohlc?vs_currency=usd&days=1"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as res:
+            data = await res.json()
+
+    # Format: [timestamp, open, high, low, close]
+    df = pd.DataFrame(data, columns=["time", "open", "high", "low", "close"])
+
+    df["time"] = pd.to_datetime(df["time"], unit="ms")
+    df.set_index("time", inplace=True)
+
+    # Add RSI
+    rsi = RSIIndicator(close=df["close"], window=14)
+    df["rsi"] = rsi.rsi()
+
+    # Add Moving Average
+    df["ma20"] = df["close"].rolling(window=20).mean()
+
+    # Create additional plots
+    apds = [
+        mpf.make_addplot(df["ma20"], color="blue"),
+        mpf.make_addplot(df["rsi"], panel=1, color="purple", ylabel="RSI")
+    ]
+
+    # Create image buffer
+    buf = BytesIO()
+
+    mpf.plot(
+        df,
+        type="candle",
+        style="charles",
+        addplot=apds,
+        volume=False,
+        panel_ratios=(3, 1),
+        figscale=1.2,
+        savefig=dict(fname=buf, format="png")
+    )
+
+    buf.seek(0)
+    return buf
