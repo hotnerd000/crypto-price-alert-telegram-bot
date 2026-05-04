@@ -1,7 +1,7 @@
 import asyncio
 from telegram.ext import ApplicationBuilder, CommandHandler
 from config import BOT_TOKEN
-from handlers import start, add, price
+from handlers import start, add, price, list_alerts, remove_alert
 from db import init_db
 from alert_engine import AlertEngine
 import socket
@@ -52,6 +52,8 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("add", add))
     app.add_handler(CommandHandler("price", price))
+    app.add_handler(CommandHandler("list", list_alerts))
+    app.add_handler(CommandHandler("remove", remove_alert))
 
     print("Bot running...")
     app.run_polling()  # <-- NO await, NO asyncio.run()

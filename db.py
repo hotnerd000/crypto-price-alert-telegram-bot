@@ -49,3 +49,20 @@ async def mark_triggered(alert_id):
             (alert_id,)
         )
         await db.commit()
+
+async def get_user_alerts(user_id):
+    async with aiosqlite.connect(DB_NAME) as db:
+        cursor = await db.execute(
+            "SELECT * FROM alerts WHERE user_id=?",
+            (user_id,)
+        )
+        return await cursor.fetchall()
+
+
+async def delete_alert(alert_id, user_id):
+    async with aiosqlite.connect(DB_NAME) as db:
+        await db.execute(
+            "DELETE FROM alerts WHERE id=? AND user_id=?",
+            (alert_id, user_id)
+        )
+        await db.commit()

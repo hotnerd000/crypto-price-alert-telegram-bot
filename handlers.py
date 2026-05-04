@@ -1,7 +1,7 @@
 from telegram import Update
 from telegram.ext import ContextTypes
 from price_service import resolve_symbol, fetch_price
-from db import add_alert
+from db import add_alert, get_user_alerts, delete_alert
 
 def recommend_levels(price):
     return round(price * 1.05, 2), round(price * 0.95, 2)
@@ -65,3 +65,55 @@ async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     except:
         await update.message.reply_text("Usage: /price BTC")
+
+
+async def list_alerts(update, context):
+    user_id = update.effective_user.id
+    alerts = await get_user_alerts(user_id)
+
+    if not alerts:
+        await update.message.reply_text("📭 No alerts set.")
+        return
+
+    msg = "📊 Your Alerts:\n\n"
+
+    for a in alerts:
+        (
+            alert_id,
+            _,
+            symbol,
+            _,
+            tp,
+            sl,
+            interval,
+            _,
+            triggered
+        ) = a
+
+        status = "✅ Triggered" if triggered else "⏳ Active"
+
+        msg += (
+            f"ID: {alert_id}\n"
+            f"{symbol.upper()}\n"
+            f"TP: {tp} | SL: {sl}\n"
+            f"Interval: {interval}s\n"
+            f"Status: {status}\n\n"
+        )
+
+    await update.message.reply_text(msg)
+
+async def remove_alert(update, context):
+    try:
+        alert_id = int(context.args[0])
+        user_id = update.effective_user.id
+
+        await delete_alert(alert_id, user_id)
+
+        await update.message.reply_text(
+            f"🗑️ Alert {alert_id} removed."
+        )
+
+    except:
+        await update.message.reply_text(
+            "Usage: /remove <alert_id>\nExample: /remove 1"
+        )
