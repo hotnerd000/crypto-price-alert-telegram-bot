@@ -1,6 +1,6 @@
 from telegram import Update
 from telegram.ext import ContextTypes
-from price_service import resolve_symbol, fetch_price
+from price_service import resolve_symbol, fetch_price_single
 from db import add_alert, get_user_alerts, delete_alert
 
 def recommend_levels(price):
@@ -24,7 +24,12 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ Invalid symbol")
             return
 
-        price = await fetch_price(coin_id)
+        price = await fetch_price_single(coin_id)
+        print(f"[DEBUG] coin_id={coin_id}, price={price}")
+
+        if price is None:
+            await update.message.reply_text("❌ Failed to fetch price.")
+            return
         rec_tp, rec_sl = recommend_levels(price)
 
         await add_alert(
@@ -57,7 +62,12 @@ async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
             await update.message.reply_text("❌ Invalid symbol")
             return
 
-        price = await fetch_price(coin_id)
+        price = await fetch_price_single(coin_id)
+        print(f"[DEBUG] coin_id={coin_id}, price={price}")
+
+        if price is None:
+            await update.message.reply_text("❌ Failed to fetch price.")
+            return
 
         await update.message.reply_text(
             f"{symbol.upper()} = ${price}"
@@ -87,7 +97,8 @@ async def list_alerts(update, context):
             sl,
             interval,
             _,
-            triggered
+            triggered,
+            cooldown_until
         ) = a
 
         status = "✅ Triggered" if triggered else "⏳ Active"

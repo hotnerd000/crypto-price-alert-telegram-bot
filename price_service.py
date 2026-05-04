@@ -23,15 +23,27 @@ async def fetch_prices_batch(coin_ids):
 
     url = f"https://api.coingecko.com/api/v3/simple/price?ids={ids}&vs_currencies=usd"
 
-    async with session.get(url) as res:
-        data = await res.json()
+    print(f"[DEBUG] Request URL: {url}")
 
-    # Normalize output
+    async with session.get(url) as res:
+        print(f"[DEBUG] Status: {res.status}")  # 👈 ADD
+        data = await res.json()
+        print(f"[DEBUG] Response: {data}")  # 👈 ADD
+
     prices = {}
     for coin in coin_ids:
-        prices[coin] = data.get(coin, {}).get("usd")
+        price = data.get(coin, {}).get("usd")
+
+        if price is None:
+            print(f"[ERROR] No price found for: {coin}")  # 👈 ADD
+
+        prices[coin] = price
 
     return prices
+
+async def fetch_price_single(coin_id):
+    prices = await fetch_prices_batch([coin_id])
+    return prices.get(coin_id)
 
 def resolve_symbol(symbol):
     symbol = symbol.lower()

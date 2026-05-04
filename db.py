@@ -2,25 +2,32 @@ import aiosqlite
 
 DB_NAME = "alerts.db"
 
-CREATE_TABLE = """
-CREATE TABLE IF NOT EXISTS alerts (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER,
-    symbol TEXT,
-    coin_id TEXT,
-    tp REAL,
-    sl REAL,
-    interval INTEGER,
-    last_checked INTEGER,
-    triggered INTEGER DEFAULT 0
-);
-
-ALTER TABLE alerts ADD COLUMN cooldown_until INTEGER DEFAULT 0;
-"""
-
 async def init_db():
     async with aiosqlite.connect(DB_NAME) as db:
-        await db.execute(CREATE_TABLE)
+
+        # ✅ Create table
+        await db.execute("""
+        CREATE TABLE IF NOT EXISTS alerts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            symbol TEXT,
+            coin_id TEXT,
+            tp REAL,
+            sl REAL,
+            interval INTEGER,
+            last_checked INTEGER,
+            triggered INTEGER DEFAULT 0
+        )
+        """)
+
+        # ✅ Add new column safely
+        try:
+            await db.execute("""
+            ALTER TABLE alerts ADD COLUMN cooldown_until INTEGER DEFAULT 0
+            """)
+        except Exception:
+            pass  # column already exists
+
         await db.commit()
 
 async def add_alert(user_id, symbol, coin_id, tp, sl, interval):

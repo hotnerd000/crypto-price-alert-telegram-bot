@@ -12,5 +12,5 @@ SYMBOL_MAP = {
     "eth": "ethereum",
     "sol": "solana",
     "bnb": "binancecoin",
-    "ton": "ton"
+    "ton": "the-open-network",
 }
