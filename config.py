@@ -6,7 +6,8 @@ load_dotenv()
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 CHECK_INTERVAL = 600  # global engine loop (seconds)
-
+CACHE_TTL = 120  # seconds
+VOLATILE_CACHE_TTL = 120  # seconds
 COIN_CONFIG  = {
     "btc": {
         "id": "bitcoin",

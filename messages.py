@@ -23,4 +23,4 @@ HELP_PRICE = f"""
 Usage:
 {CMD_PRICE_EXAMPLE}
 """
-
+HELP_VOLATILE = "/volatile [1h|6h|24h]\n\nExamples:\n/volatile\n/volatile 1h"

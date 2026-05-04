@@ -5,6 +5,7 @@ from db import upsert_alert, get_user_alerts, delete_alert, get_alert_by_user_co
 from messages import HELP_ADD, CMD_UPDATE_EXAMPLE, CMD_PRICE_EXAMPLE
 from price_service import generate_candlestick_chart, estimate_swap_cost_universal
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from price_service import get_most_volatile
 
 def recommend_levels(price):
     return round(price * 1.05, 2), round(price * 0.95, 2)
@@ -230,3 +231,36 @@ async def remove_alert(update, context):
             "Usage: /remove <alert_id>\nExample: /remove 1"
         )
 
+
+async def volatile(update, context):
+    # default timeframe
+    timeframe = "6h"
+
+    if context.args:
+        arg = context.args[0].lower()
+        if arg in ["1h", "6h", "24h"]:
+            timeframe = arg
+        else:
+            await update.effective_message.reply_text(
+                "❌ Invalid timeframe.\nUse: /volatile [1h|6h|24h]"
+            )
+            return
+
+    coins = await get_most_volatile(timeframe)
+
+    if not coins:
+        await update.effective_message.reply_text("❌ Failed to fetch data.")
+        return
+
+    msg = f"🔥 Top Volatile Coins ({timeframe})\n\n"
+
+    for i, c in enumerate(coins, 1):
+        arrow = "📈" if c["change"] >= 0 else "📉"
+
+        msg += (
+            f"{i}. {c['symbol']} {arrow} {round(c['change'],2)}%\n"
+        )
+
+    msg += "\n💡 Use /price <symbol> to analyze further"
+
+    await update.effective_message.reply_text(msg)

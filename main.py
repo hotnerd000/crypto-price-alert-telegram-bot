@@ -7,7 +7,7 @@ from alert_engine import AlertEngine
 import socket
 from telegram.request import HTTPXRequest
 from price_service import session
-from handlers import update_alert_cmd
+from handlers import update_alert_cmd, volatile
 
 
 # Force IPv4
@@ -63,6 +63,7 @@ def main():
     app.add_handler(CommandHandler("list", list_alerts))
     app.add_handler(CommandHandler("remove", remove_alert))
     app.add_handler(CommandHandler("update", update_alert_cmd))
+    app.add_handler(CommandHandler("volatile", volatile))
 
     print("Bot running...")
     app.run_polling()  # <-- NO await, NO asyncio.run()

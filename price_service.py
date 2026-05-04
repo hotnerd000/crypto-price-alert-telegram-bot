@@ -1,14 +1,17 @@
 import matplotlib.pyplot as plt
 import aiohttp
 import time
-from config import COIN_CONFIG, NETWORK_FEES
+from config import COIN_CONFIG, NETWORK_FEES, CACHE_TTL, VOLATILE_CACHE_TTL
 import pandas as pd
 from io import BytesIO
 import mplfinance as mpf
 from ta.momentum import RSIIndicator
 
 CACHE = {}
-CACHE_TTL = 120  # seconds
+_VOLATILE_CACHE = {
+    "data": None,
+    "timestamp": 0
+}
 
 session = None
 
@@ -179,3 +182,52 @@ def estimate_swap_cost_universal(symbol: str, amount: float):
         "total_cost": round(total_cost, 4),
         "receive": round(receive, 4)
     }
+
+async def get_most_volatile(hours="6h", limit=5):
+    now = time.time()
+
+    # ✅ cache check
+    if _VOLATILE_CACHE["data"] and now - _VOLATILE_CACHE["timestamp"] < CACHE_TTL:
+        data = _VOLATILE_CACHE["data"]
+    else:
+        url = (
+            "https://api.coingecko.com/api/v3/coins/markets"
+            "?vs_currency=usd"
+            "&order=market_cap_desc"
+            "&per_page=100"
+            "&price_change_percentage=1h,24h"
+        )
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as res:
+                data = await res.json()
+
+        _VOLATILE_CACHE["data"] = data
+        _VOLATILE_CACHE["timestamp"] = now
+
+    results = []
+
+    for c in data:
+        # ✅ filter low quality coins
+        if c.get("market_cap", 0) < 100_000_000:
+            continue
+
+        if hours == "1h":
+            change = c.get("price_change_percentage_1h_in_currency", 0)
+        elif hours == "24h":
+            change = c.get("price_change_percentage_24h", 0)
+        else:  # 6h (custom blend)
+            c1 = c.get("price_change_percentage_1h_in_currency") or 0
+            c24 = c.get("price_change_percentage_24h") or 0
+            change = (c1 * 0.5) + (c24 * 0.5)
+
+        results.append({
+            "symbol": c["symbol"].upper(),
+            "price": c["current_price"],
+            "change": change,
+            "volatility": abs(change)
+        })
+
+    results.sort(key=lambda x: x["volatility"], reverse=True)
+
+    return results[:limit]
