@@ -2,7 +2,7 @@ from telegram import Update
 from telegram.ext import ContextTypes
 from price_service import resolve_symbol, fetch_price_single
 from db import upsert_alert, get_user_alerts, delete_alert, get_alert_by_user_coin
-from messages import HELP_ADD
+from messages import HELP_ADD, CMD_UPDATE_EXAMPLE
 
 def recommend_levels(price):
     return round(price * 1.05, 2), round(price * 0.95, 2)
@@ -68,11 +68,30 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 async def update_alert_cmd(update, context):
+    if len(context.args) < 4:
+        await update.effective_message.reply_text(
+            "⚠️ Invalid format.\n\n"
+            "Usage:\n"
+            "/update <symbol> <tp> <sl> <interval>\n\n"
+            "Example:\n"
+            f"{CMD_UPDATE_EXAMPLE}"
+        )
+        return
+     
     user_id = update.effective_user.id
-    symbol = context.args[0].lower()
-    tp = float(context.args[1])
-    sl = float(context.args[2])
-    interval = int(context.args[3])
+
+    try:
+        symbol = context.args[0].lower()
+        tp = float(context.args[1])
+        sl = float(context.args[2])
+        interval = int(context.args[3])
+    except ValueError:
+        await update.effective_message.reply_text(
+            "⚠️ Invalid number format.\n\n"
+            "Example:\n"
+            f"{CMD_UPDATE_EXAMPLE}"
+        )
+        return    
 
     coin_id = resolve_symbol(symbol)
 

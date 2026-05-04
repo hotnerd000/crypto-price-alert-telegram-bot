@@ -1,6 +1,7 @@
 # messages.py
 
-CMD_ADD_EXAMPLE = "/add BTC 70000 63000 60"
+CMD_ADD_EXAMPLE = "/add BTC 80000 78000 600"
+CMD_UPDATE_EXAMPLE = "/update BTC 80000 78000 600"
 CMD_PRICE_EXAMPLE = "/price BTC"
 
 HELP_ADD = f"""
@@ -17,3 +18,4 @@ HELP_PRICE = f"""
 Usage:
 {CMD_PRICE_EXAMPLE}
 """
+
