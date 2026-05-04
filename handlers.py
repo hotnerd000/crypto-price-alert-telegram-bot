@@ -103,7 +103,7 @@ async def update_alert_cmd(update, context):
 
     await upsert_alert(user_id, symbol, coin_id, tp, sl, interval)
 
-    await update.message.reply_text("🔄 Alert updated!")
+    await update.message.reply_text(f"🔄 Alert updated for {symbol.upper()}")
 
 async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
      
