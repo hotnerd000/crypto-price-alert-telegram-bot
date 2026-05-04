@@ -221,7 +221,7 @@ print("[DEBUG] Response:", data)
 
 ### ❌ Invalid symbol
 
-* Ensure mapping exists in `SYMBOL_MAP`
+* Ensure mapping exists in `COIN_CONFIG `
 
 ---
 
@@ -232,10 +232,23 @@ Uses CoinGecko IDs:
 Example:
 
 ```python
-SYMBOL_MAP = {
-    "btc": "bitcoin",
-    "eth": "ethereum",
-    "ton": "the-open-network"
+COIN_CONFIG  = {
+    "btc": {
+        "id": "bitcoin",
+        "chain": "ETH"   # BTC wrapped trading assumption
+    },
+    "eth": {
+        "id": "ethereum",
+        "chain": "ETH"
+    },
+    "bnb": {
+        "id": "binancecoin",
+        "chain": "BSC"
+    },
+    "ton": {
+        "id": "the-open-network",
+        "chain": "TON"
+    }
 }
 ```
 

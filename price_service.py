@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import aiohttp
 import time
-from config import SYMBOL_MAP
+from config import COIN_CONFIG, NETWORK_FEES
 import pandas as pd
 from io import BytesIO
 import mplfinance as mpf
@@ -89,7 +89,7 @@ async def fetch_price_single(coin_id):
 
 def resolve_symbol(symbol):
     symbol = symbol.lower()
-    return SYMBOL_MAP.get(symbol)
+    return COIN_CONFIG[symbol]["id"]
 
 async def generate_candlestick_chart(coin_id):
     url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/ohlc?vs_currency=usd&days=1"
@@ -133,3 +133,49 @@ async def generate_candlestick_chart(coin_id):
 
     buf.seek(0)
     return buf
+
+    
+def estimate_slippage(amount_usd: float) -> float:
+    if amount_usd < 100:
+        return 0.2
+    elif amount_usd < 1000:
+        return 0.5
+    elif amount_usd < 10000:
+        return 1.0
+    else:
+        return 2.0
+    
+def estimate_swap_cost_universal(symbol: str, amount: float):
+    symbol = symbol.lower()
+
+    # 🔹 Get coin config
+    coin_data = COIN_CONFIG[symbol]
+
+    if not coin_data:
+        return None
+
+    # 🔹 Extract chain from config (replaces CHAIN_MAP)
+    chain = coin_data.get("chain", "ETH")
+
+    # 🔹 Network fee
+    fee_low, fee_high = NETWORK_FEES.get(chain, (1, 5))
+    avg_fee = (fee_low + fee_high) / 2
+
+    # 🔹 Slippage
+    slippage_pct = estimate_slippage(amount)
+    slippage_cost = amount * slippage_pct / 100
+
+    # 🔹 Total cost
+    total_cost = avg_fee + slippage_cost
+    receive = amount - total_cost
+
+    return {
+        "symbol": symbol.upper(),
+        "chain": chain,
+        "amount": amount,
+        "gas_fee": round(avg_fee, 4),
+        "slippage_pct": slippage_pct,
+        "slippage_cost": round(slippage_cost, 4),
+        "total_cost": round(total_cost, 4),
+        "receive": round(receive, 4)
+    }

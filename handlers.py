@@ -3,7 +3,7 @@ from telegram.ext import ContextTypes
 from price_service import resolve_symbol, fetch_price_single, generate_chart
 from db import upsert_alert, get_user_alerts, delete_alert, get_alert_by_user_coin
 from messages import HELP_ADD, CMD_UPDATE_EXAMPLE, CMD_PRICE_EXAMPLE
-from price_service import generate_candlestick_chart
+from price_service import generate_candlestick_chart, estimate_swap_cost_universal
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 
 def recommend_levels(price):
@@ -140,13 +140,31 @@ async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"Interval: {alert[6]}s"
         )
 
-    # chart_image = await generate_chart(coin_id)
+    # ✅ Parse optional amount
+    amount = None
+    if len(context.args) >= 2:
+        try:
+            amount = float(context.args[1])
+        except:
+            await update.effective_message.reply_text("❌ Invalid amount.")
+            return
+        
+    if amount:
+        swap = estimate_swap_cost_universal(symbol, amount)
+
+        if swap:
+            msg += (
+                f"\n\n💸 Swap Estimate"
+                f"\nNetwork: {swap['chain']}"
+                f"\nAmount: ${swap['amount']}"
+                f"\nSlippage: ~{swap['slippage_pct']}%"
+                f"\nNetwork Fee: ~${swap['gas_fee']}"
+                f"\n\nTotal Cost: ~${swap['total_cost']}"
+                f"\nYou Receive: ~${swap['receive']}"
+            )
+    
     chart = await generate_candlestick_chart(coin_id)
 
-    # await update.effective_message.reply_photo(
-    #     photo=chart,
-    #     caption=msg
-    # )
     chart_url = f"https://www.tradingview.com/symbols/BINANCE:{symbol.upper()}USDT/"
 
     keyboard = [
