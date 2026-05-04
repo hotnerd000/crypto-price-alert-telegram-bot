@@ -5,7 +5,7 @@ load_dotenv()
 
 BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
-CHECK_INTERVAL = 20  # global engine loop (seconds)
+CHECK_INTERVAL = 600  # global engine loop (seconds)
 
 SYMBOL_MAP = {
     "btc": "bitcoin",

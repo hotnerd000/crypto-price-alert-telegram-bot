@@ -3,7 +3,7 @@ import time
 from config import SYMBOL_MAP
 
 CACHE = {}
-CACHE_TTL = 20  # seconds
+CACHE_TTL = 120  # seconds
 
 session = None
 
@@ -19,27 +19,40 @@ async def fetch_prices_batch(coin_ids):
     coin_ids = ["bitcoin", "ethereum", "solana"]
     """
     session = await get_session()
-    ids = ",".join(coin_ids)
 
-    url = f"https://api.coingecko.com/api/v3/simple/price?ids={ids}&vs_currencies=usd"
+    now = time.time()
 
-    print(f"[DEBUG] Request URL: {url}")
+    # ✅ Check cache first
+    cached_prices = {}
+    coins_to_fetch = []
 
-    async with session.get(url) as res:
-        print(f"[DEBUG] Status: {res.status}")  # 👈 ADD
-        data = await res.json()
-        print(f"[DEBUG] Response: {data}")  # 👈 ADD
-
-    prices = {}
     for coin in coin_ids:
-        price = data.get(coin, {}).get("usd")
+        if coin in CACHE and now - CACHE[coin]["ts"] < CACHE_TTL:
+            cached_prices[coin] = CACHE[coin]["price"]
+        else:
+            coins_to_fetch.append(coin)
 
-        if price is None:
-            print(f"[ERROR] No price found for: {coin}")  # 👈 ADD
+    # ✅ Fetch only missing coins
+    if coins_to_fetch:
+        ids = ",".join(coins_to_fetch)
+        url = f"https://api.coingecko.com/api/v3/simple/price?ids={ids}&vs_currencies=usd"
 
-        prices[coin] = price
+        print(f"[API CALL] {url}")
 
-    return prices
+        async with session.get(url) as res:
+            data = await res.json()
+
+        for coin in coins_to_fetch:
+            price = data.get(coin, {}).get("usd")
+
+            CACHE[coin] = {
+                "price": price,
+                "ts": now
+            }
+
+            cached_prices[coin] = price
+
+    return cached_prices
 
 async def fetch_price_single(coin_id):
     prices = await fetch_prices_batch([coin_id])
