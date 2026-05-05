@@ -8,7 +8,8 @@ from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from price_service import get_most_volatile
 
 def recommend_levels(price):
-    return round(price * 1.05, 2), round(price * 0.95, 2)
+    #SL:HP = 1:2
+    return round(price * 1.1, 2), round(price * 0.95, 2)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
@@ -122,6 +123,7 @@ async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     price = await fetch_price_single(coin_id)
+    rec_tp, rec_sl = recommend_levels(price)
     
     print(f"[DEBUG] coin_id={coin_id}, price={price}")
 
@@ -138,9 +140,14 @@ async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"\n\n🔔 Your Alert:\n"
             f"TP: {alert[4]}\n"
             f"SL: {alert[5]}\n"
-            f"Interval: {alert[6]}s"
+            f"Interval: {alert[6]}s\n"
         )
 
+    msg +=(
+        f"Recommended SL: {rec_sl}\n"
+        f"Recommended HP: {rec_tp}\n"
+    )
+    
     # ✅ Parse optional amount
     amount = None
     if len(context.args) >= 2:
