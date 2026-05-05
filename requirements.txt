@@ -3,3 +3,6 @@ aiohttp>=3.8,<4.0
 aiosqlite>=0.19,<1.0
 dotenv
 matplotlib
+pandas
+mplfinance
+ta
