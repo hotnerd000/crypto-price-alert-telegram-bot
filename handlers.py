@@ -133,7 +133,7 @@ async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     alert = await get_alert_by_user_coin(update.effective_user.id, coin_id)
 
-    msg = f"📊 {symbol.upper()} Price: ${price}"
+    msg = f"📊 {symbol.upper()} Price: ${price}\n"
 
     if alert:
         msg += (
@@ -253,20 +253,27 @@ async def volatile(update, context):
             )
             return
 
-    coins = await get_most_volatile(timeframe)
+    data  = await get_most_volatile(timeframe)
 
-    if not coins:
+    if not data :
         await update.effective_message.reply_text("❌ Failed to fetch data.")
         return
 
-    msg = f"🔥 Top Volatile Coins ({timeframe})\n\n"
+    bullish = data["bullish"]
+    bearish = data["bearish"]
 
-    for i, c in enumerate(coins, 1):
-        arrow = "📈" if c["change"] >= 0 else "📉"
+    msg = f"🔥 Volatile Market Scan ({timeframe})\n\n"
 
-        msg += (
-            f"{i}. {c['symbol']} {arrow} {round(c['change'],2)}%\n"
-        )
+    # 🟢 Bullish
+    msg += "🟢 Top Gainers\n"
+    for i, c in enumerate(bullish, 1):
+        msg += f"{i}. {c['symbol']} 📈 {round(c['change'],2)}%\n"
+
+    msg += "\n🔴 Top Losers\n"
+
+    # 🔴 Bearish
+    for i, c in enumerate(bearish, 1):
+        msg += f"{i}. {c['symbol']} 📉 {round(c['change'],2)}%\n"
 
     msg += "\n💡 Use /price <symbol> to analyze further"
 

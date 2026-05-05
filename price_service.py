@@ -205,7 +205,8 @@ async def get_most_volatile(hours="6h", limit=5):
         _VOLATILE_CACHE["data"] = data
         _VOLATILE_CACHE["timestamp"] = now
 
-    results = []
+    bullish = []
+    bearish = []
 
     for c in data:
         # ✅ filter low quality coins
@@ -221,13 +222,22 @@ async def get_most_volatile(hours="6h", limit=5):
             c24 = c.get("price_change_percentage_24h") or 0
             change = (c1 * 0.5) + (c24 * 0.5)
 
-        results.append({
+        coin = {
             "symbol": c["symbol"].upper(),
             "price": c["current_price"],
             "change": change,
             "volatility": abs(change)
-        })
+        }
 
-    results.sort(key=lambda x: x["volatility"], reverse=True)
+        if change >= 0:
+            bullish.append(coin)
+        else:
+            bearish.append(coin)
 
-    return results[:limit]
+    bullish.sort(key=lambda x: x["volatility"], reverse=True)
+    bearish.sort(key=lambda x: x["volatility"], reverse=True)
+
+    return {
+        "bullish": bullish[:limit],
+        "bearish": bearish[:limit]
+    }
