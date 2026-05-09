@@ -214,12 +214,12 @@ async def get_most_volatile(hours="6h", limit=5):
             continue
 
         if hours == "1h":
-            change = c.get("price_change_percentage_1h_in_currency", 0)
+            change = c.get("price_change_percentage_1h_in_currency") or 0
         elif hours == "24h":
-            change = c.get("price_change_percentage_24h", 0)
+            change = c.get("price_change_percentage_24h_in_currency") or 0
         else:  # 6h (custom blend)
             c1 = c.get("price_change_percentage_1h_in_currency") or 0
-            c24 = c.get("price_change_percentage_24h") or 0
+            c24 = c.get("price_change_percentage_24h_in_currency") or 0
             change = (c1 * 0.5) + (c24 * 0.5)
 
         coin = {
