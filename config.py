@@ -24,6 +24,10 @@ COIN_CONFIG  = {
     "ton": {
         "id": "the-open-network",
         "chain": "TON"
+    },
+    "dao": {
+        "id": "dao-maker",
+        "chain": "ETH"
     }
 }
 

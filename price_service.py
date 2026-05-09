@@ -92,7 +92,12 @@ async def fetch_price_single(coin_id):
 
 def resolve_symbol(symbol):
     symbol = symbol.lower()
-    return COIN_CONFIG[symbol]["id"]
+    coin = COIN_CONFIG.get(symbol)
+
+    if not coin:
+        return None
+
+    return coin["id"]
 
 async def generate_candlestick_chart(coin_id):
     url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/ohlc?vs_currency=usd&days=1"
