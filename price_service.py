@@ -100,49 +100,129 @@ def resolve_symbol(symbol):
     return coin["id"]
 
 async def generate_candlestick_chart(coin_id):
-    url = f"https://api.coingecko.com/api/v3/coins/{coin_id}/ohlc?vs_currency=usd&days=1"
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as res:
-            data = await res.json()
+    try:
+        url = (
+            f"https://api.coingecko.com/api/v3/coins/"
+            f"{coin_id}/ohlc?vs_currency=usd&days=1"
+        )
 
-    # Format: [timestamp, open, high, low, close]
-    df = pd.DataFrame(data, columns=["time", "open", "high", "low", "close"])
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as res:
 
-    df["time"] = pd.to_datetime(df["time"], unit="ms")
-    df.set_index("time", inplace=True)
+                if res.status != 200:
+                    raise Exception(f"CoinGecko API error: {res.status}")
 
-    # Add RSI
-    rsi = RSIIndicator(close=df["close"], window=14)
-    df["rsi"] = rsi.rsi()
+                data = await res.json()
 
-    # Add Moving Average
-    df["ma20"] = df["close"].rolling(window=20).mean()
+        # ✅ Validate response
+        if not data or not isinstance(data, list):
+            raise ValueError("No OHLC data returned")
 
-    # Create additional plots
-    apds = [
-        mpf.make_addplot(df["ma20"], color="blue"),
-        mpf.make_addplot(df["rsi"], panel=1, color="purple", ylabel="RSI")
-    ]
+        # Format:
+        # [timestamp, open, high, low, close]
 
-    # Create image buffer
-    buf = BytesIO()
+        df = pd.DataFrame(
+            data,
+            columns=["time", "open", "high", "low", "close"]
+        )
 
-    mpf.plot(
-        df,
-        type="candle",
-        style="charles",
-        addplot=apds,
-        volume=False,
-        panel_ratios=(3, 1),
-        figscale=1.2,
-        savefig=dict(fname=buf, format="png")
-    )
+        # ✅ Empty dataframe protection
+        if df.empty:
+            raise ValueError("Empty dataframe")
 
-    buf.seek(0)
-    return buf
+        # ✅ Convert timestamp
+        df["time"] = pd.to_datetime(df["time"], unit="ms")
 
-    
+        # ✅ Set datetime index
+        df.set_index("time", inplace=True)
+
+        # ✅ Ensure numeric
+        numeric_cols = ["open", "high", "low", "close"]
+
+        for col in numeric_cols:
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
+        # ✅ Remove invalid rows
+        df.dropna(subset=numeric_cols, inplace=True)
+
+        # ✅ Need enough candles
+        if len(df) < 5:
+            raise ValueError("Not enough candle data")
+
+        # ✅ Rename for mplfinance
+        df.rename(columns={
+            "open": "Open",
+            "high": "High",
+            "low": "Low",
+            "close": "Close"
+        }, inplace=True)
+
+        # =========================
+        # Indicators
+        # =========================
+
+        # RSI
+        rsi = RSIIndicator(close=df["Close"], window=14)
+        df["RSI"] = rsi.rsi()
+
+        # Moving Average
+        df["MA20"] = df["Close"].rolling(window=20).mean()
+
+        # =========================
+        # Additional plots
+        # =========================
+
+        apds = [
+            mpf.make_addplot(
+                df["MA20"],
+                color="blue"
+            ),
+
+            mpf.make_addplot(
+                df["RSI"],
+                panel=1,
+                color="purple",
+                ylabel="RSI"
+            )
+        ]
+
+        # =========================
+        # Create image buffer
+        # =========================
+
+        buf = BytesIO()
+
+        mpf.plot(
+            df,
+            type="candle",
+            style="charles",
+            addplot=apds,
+            volume=False,
+            panel_ratios=(3, 1),
+            figscale=1.2,
+            tight_layout=True,
+            savefig=dict(
+                fname=buf,
+                format="png",
+                dpi=120
+            )
+        )
+
+        buf.seek(0)
+
+        return buf
+
+    except Exception as e:
+
+        import traceback
+
+        traceback.print_exc()
+
+        print(f"[CHART ERROR] {coin_id}: {e}")
+
+        return None
+        
 def estimate_slippage(amount_usd: float) -> float:
     if amount_usd < 100:
         return 0.2
