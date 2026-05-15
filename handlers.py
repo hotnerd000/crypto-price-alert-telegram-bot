@@ -257,7 +257,6 @@ async def remove_alert(update, context):
             "Usage: /remove <alert_id>\nExample: /remove 1"
         )
 
-
 async def volatile(update, context):
     # default timeframe
     timeframe = "6h"

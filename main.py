@@ -4,11 +4,11 @@ from config import BOT_TOKEN
 from handlers import start, add, price, list_alerts, remove_alert
 from db import init_db
 from alert_engine import AlertEngine
-import socket
+import socket, time
 from telegram.request import HTTPXRequest
 from price_service import session
 from handlers import update_alert_cmd, volatile
-
+import traceback
 
 # Force IPv4
 def force_ipv4():
@@ -41,7 +41,6 @@ def main():
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
 
-
     request = HTTPXRequest(
         connect_timeout=30.0,
         read_timeout=30.0,
@@ -65,9 +64,17 @@ def main():
     app.add_handler(CommandHandler("update", update_alert_cmd))
     app.add_handler(CommandHandler("volatile", volatile))
 
-    print("Bot running...")
-    app.run_polling()  # <-- NO await, NO asyncio.run()
-
+    while True:  # run forever
+        try:
+            print("Bot running...")
+            app.run_polling()  # <-- NO await, NO asyncio.run()
+            break
+        except Exception as e:
+            # catch all errors including network/DNS errors
+            print(f"[ERROR] Bot crashed: {e}")
+            traceback.print_exc()
+            print("Retrying in 120 seconds...")
+            time.sleep(120)  # wait a bit before retrying
 
 if __name__ == "__main__":
     main()

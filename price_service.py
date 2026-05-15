@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import aiohttp
+import asyncio
 import time
 from config import COIN_CONFIG, NETWORK_FEES, CACHE_TTL, VOLATILE_CACHE_TTL
 import pandas as pd
@@ -47,8 +48,28 @@ async def fetch_prices_batch(coin_ids):
 
         print(f"[API CALL] {url}")
 
-        async with session.get(url) as res:
-            data = await res.json()
+        # ⚡ Set timeout (total 10 seconds)
+        timeout = aiohttp.ClientTimeout(total=10)
+
+        try:
+            async with session.get(url, timeout=timeout) as res:
+                # optional: raise for HTTP errors
+                res.raise_for_status()
+                data = await res.json()
+
+        except asyncio.TimeoutError:
+            print(f"[ERROR] Timeout fetching prices for: {ids}")
+            # mark missing coins as None
+            for coin in coins_to_fetch:
+                cached_prices[coin] = None
+            return cached_prices
+
+        except aiohttp.ClientError as e:
+            print(f"[ERROR] HTTP error fetching prices: {e}")
+            for coin in coins_to_fetch:
+                cached_prices[coin] = None
+            return cached_prices
+
 
         for coin in coins_to_fetch:
             price = data.get(coin, {}).get("usd")
