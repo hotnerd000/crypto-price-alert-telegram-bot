@@ -6,6 +6,7 @@ from messages import HELP_ADD, CMD_UPDATE_EXAMPLE, CMD_PRICE_EXAMPLE
 from price_service import generate_candlestick_chart, estimate_swap_cost_universal
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from price_service import get_most_volatile
+from PIL import Image, ImageDraw, ImageFont
 
 def recommend_levels(price):
     #SL:HP = 1:2
@@ -179,6 +180,24 @@ async def price(update: Update, context: ContextTypes.DEFAULT_TYPE):
         [InlineKeyboardButton("📈 Chart", url=chart_url)],
         [InlineKeyboardButton("🌐 Coin Info", url=f"https://www.coingecko.com/en/coins/{coin_id}")]
     ]
+
+    if chart is None:
+        # create a placeholder image
+        img = Image.new("RGB", (600, 400), color=(255, 255, 255))
+        draw = ImageDraw.Draw(img)
+        text = "📉 Failed to generate chart"
+        try:
+            # optional: default font
+            font = ImageFont.load_default()
+            w, h = draw.textsize(text, font=font)
+            draw.text(((600-w)/2, (400-h)/2), text, fill="red", font=font)
+        except:
+            draw.text((50, 180), text, fill="red")
+
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        buf.seek(0)
+        chart = buf
 
     await update.effective_message.reply_photo(
         photo=chart,
