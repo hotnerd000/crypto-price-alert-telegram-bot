@@ -73,8 +73,8 @@ def main():
             # catch all errors including network/DNS errors
             print(f"[ERROR] Bot crashed: {e}")
             traceback.print_exc()
-            print("Retrying in 120 seconds...")
-            time.sleep(120)  # wait a bit before retrying
+            print("Retrying in 300 seconds...")
+            time.sleep(300)  # wait a bit before retrying
 
 if __name__ == "__main__":
     main()
