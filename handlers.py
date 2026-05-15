@@ -7,6 +7,7 @@ from price_service import generate_candlestick_chart, estimate_swap_cost_univers
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from price_service import get_most_volatile
 from PIL import Image, ImageDraw, ImageFont
+from io import BytesIO
 
 def recommend_levels(price):
     #SL:HP = 1:2
