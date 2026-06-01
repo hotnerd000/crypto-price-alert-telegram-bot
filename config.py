@@ -28,6 +28,10 @@ COIN_CONFIG  = {
     "dao": {
         "id": "dao-maker",
         "chain": "ETH"
+    },
+    "sol": {
+        "id": "solana",
+        "chain": "SOL"
     }
 }
 
